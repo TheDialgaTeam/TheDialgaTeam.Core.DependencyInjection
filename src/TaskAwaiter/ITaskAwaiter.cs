@@ -8,11 +8,11 @@ namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
     {
         Task EnqueueTask(Task taskToAwait);
 
-        Task EnqueueTask(Func<CancellationToken, Action> taskToAwait);
+        Task EnqueueTask(Action<CancellationToken> taskToAwait);
 
         Task EnqueueTask(Func<CancellationToken, Task> taskToAwait);
 
-        Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Action> taskToAwait);
+        Task EnqueueTask<TState>(TState state, Action<CancellationToken, TState> taskToAwait);
 
         Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Task> taskToAwait);
     }

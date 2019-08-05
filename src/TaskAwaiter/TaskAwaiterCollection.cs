@@ -7,6 +7,64 @@ namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
 {
     internal class TaskAwaiterCollection : ITaskAwaiter, IDisposable
     {
+        private class EnqueueTaskState
+        {
+            public Action<CancellationToken> TaskToAwait { get; }
+
+            public CancellationToken CancellationToken { get; }
+
+            public EnqueueTaskState(Action<CancellationToken> taskToAwait, CancellationToken cancellationToken)
+            {
+                TaskToAwait = taskToAwait;
+                CancellationToken = cancellationToken;
+            }
+        }
+
+        private class EnqueueTaskState<TState>
+        {
+            public TState State { get; }
+
+            public Action<CancellationToken, TState> TaskToAwait { get; }
+
+            public CancellationToken CancellationToken { get; }
+
+            public EnqueueTaskState(TState state, Action<CancellationToken, TState> taskToAwait, CancellationToken cancellationToken)
+            {
+                State = state;
+                TaskToAwait = taskToAwait;
+                CancellationToken = cancellationToken;
+            }
+        }
+
+        private class EnqueueTaskAsyncState
+        {
+            public Func<CancellationToken, Task> TaskToAwait { get; }
+
+            public CancellationToken CancellationToken { get; }
+
+            public EnqueueTaskAsyncState(Func<CancellationToken, Task> taskToAwait, CancellationToken cancellationToken)
+            {
+                TaskToAwait = taskToAwait;
+                CancellationToken = cancellationToken;
+            }
+        }
+
+        private class EnqueueTaskAsyncState<TState>
+        {
+            public TState State { get; }
+
+            public Func<CancellationToken, TState, Task> TaskToAwait { get; }
+
+            public CancellationToken CancellationToken { get; }
+
+            public EnqueueTaskAsyncState(TState state, Func<CancellationToken, TState, Task> taskToAwait, CancellationToken cancellationToken)
+            {
+                State = state;
+                TaskToAwait = taskToAwait;
+                CancellationToken = cancellationToken;
+            }
+        }
+
         private CancellationTokenSource CancellationTokenSource { get; }
 
         private List<Task> TaskToAwait { get; } = new List<Task>();
@@ -22,31 +80,55 @@ namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
             return taskToAwait;
         }
 
-        public Task EnqueueTask(Func<CancellationToken, Action> taskToAwait)
+        public Task EnqueueTask(Action<CancellationToken> taskToAwait)
         {
-            var task = Task.Run(taskToAwait(CancellationTokenSource.Token), CancellationTokenSource.Token);
+            var task = Task.Factory.StartNew(stateObj =>
+            {
+                if (stateObj is EnqueueTaskState state)
+                    state.TaskToAwait(state.CancellationToken);
+            }, new EnqueueTaskState(taskToAwait, CancellationTokenSource.Token), CancellationTokenSource.Token);
+
             TaskToAwait.Add(task);
+
             return task;
         }
 
         public Task EnqueueTask(Func<CancellationToken, Task> taskToAwait)
         {
-            var task = Task.Run(async () => await taskToAwait(CancellationTokenSource.Token).ConfigureAwait(false), CancellationTokenSource.Token);
+            var task = Task.Factory.StartNew(async stateObj =>
+            {
+                if (stateObj is EnqueueTaskAsyncState state)
+                    await state.TaskToAwait(state.CancellationToken).ConfigureAwait(false);
+            }, new EnqueueTaskAsyncState(taskToAwait, CancellationTokenSource.Token), CancellationTokenSource.Token).Unwrap();
+
             TaskToAwait.Add(task);
+
             return task;
         }
 
-        public Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Action> taskToAwait)
+        public Task EnqueueTask<TState>(TState state, Action<CancellationToken, TState> taskToAwait)
         {
-            var task = Task.Run(taskToAwait(CancellationTokenSource.Token, state), CancellationTokenSource.Token);
+            var task = Task.Factory.StartNew(stateObj =>
+            {
+                if (stateObj is EnqueueTaskState<TState> state2)
+                    state2.TaskToAwait(state2.CancellationToken, state2.State);
+            }, new EnqueueTaskState<TState>(state, taskToAwait, CancellationTokenSource.Token), CancellationTokenSource.Token);
+
             TaskToAwait.Add(task);
+
             return task;
         }
 
         public Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Task> taskToAwait)
         {
-            var task = Task.Run(async () => await taskToAwait(CancellationTokenSource.Token, state).ConfigureAwait(false), CancellationTokenSource.Token);
+            var task = Task.Factory.StartNew(async stateObj =>
+            {
+                if (stateObj is EnqueueTaskAsyncState<TState> state2)
+                    await state2.TaskToAwait(state2.CancellationToken, state2.State).ConfigureAwait(false);
+            }, new EnqueueTaskAsyncState<TState>(state, taskToAwait, CancellationTokenSource.Token), CancellationTokenSource.Token).Unwrap();
+
             TaskToAwait.Add(task);
+
             return task;
         }
 
