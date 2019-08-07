@@ -25,7 +25,7 @@ namespace TheDialgaTeam.Core.DependencyInjection
                 throw new ArgumentNullException(nameof(implementationFactory));
 
             foreach (var type in typeof(TService).GetInterfaces())
-                serviceCollection.AddSingleton(type, typeof(TService));
+                serviceCollection.AddSingleton(type, implementationFactory);
 
             return serviceCollection;
         }
@@ -39,7 +39,7 @@ namespace TheDialgaTeam.Core.DependencyInjection
                 throw new ArgumentNullException(nameof(implementationInstance));
 
             foreach (var type in typeof(TService).GetInterfaces())
-                serviceCollection.AddSingleton(type, typeof(TService));
+                serviceCollection.AddSingleton(type, implementationInstance);
 
             return serviceCollection;
         }
