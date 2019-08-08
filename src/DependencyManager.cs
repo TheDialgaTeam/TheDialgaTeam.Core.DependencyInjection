@@ -18,8 +18,7 @@ namespace TheDialgaTeam.Core.DependencyInjection
         {
             ServiceCollection = new ServiceCollection();
             ServiceCollection.AddSingleton(new CancellationTokenSource());
-            ServiceCollection.AddSingleton<TaskAwaiterCollection>();
-            ServiceCollection.AddSingleton<ITaskAwaiter>(provider => provider.GetRequiredService<TaskAwaiterCollection>());
+            ServiceCollection.AddInterfacesAndSelfAsSingleton<TaskAwaiterCollection>();
         }
 
         public void InstallFactory(IFactoryInstaller installer)
