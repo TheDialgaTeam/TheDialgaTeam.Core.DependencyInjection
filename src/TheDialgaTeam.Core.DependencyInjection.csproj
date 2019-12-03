@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>TheDialgaTeam.Core.DependencyInjection</AssemblyName>
     <RootNamespace>TheDialgaTeam.Core.DependencyInjection</RootNamespace>
-    <TargetFrameworks>netstandard2.1;netstandard2.0;net471;net47;net462;net461</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;netstandard2.0</TargetFrameworks>
     <OutputType>Library</OutputType>
     <PackageId>TheDialgaTeam.Core.DependencyInjection</PackageId>
     <Version>0.0.1.0</Version>
@@ -14,16 +14,17 @@
     <PackageProjectUrl>https://github.com/TheDialgaTeam/TheDialgaTeam.Core.DependencyInjection</PackageProjectUrl>
     <RepositoryUrl>https://github.com/TheDialgaTeam/TheDialgaTeam.Core.DependencyInjection</RepositoryUrl>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>Debug_linux;Release_linux;Debug_osx;Release_osx;Debug_win;Release_win</Configurations>
+    <Platforms>arm;x64;x86</Platforms>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+  <PropertyGroup Condition="'$(Configuration)'=='Debug_linux' OR '$(Configuration)'=='Debug_osx' OR '$(Configuration)'=='Debug_win'">
     <DefineConstants>DEBUG</DefineConstants>
     <Optimize>false</Optimize>
     <DebugType>embedded</DebugType>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+  <PropertyGroup Condition="'$(Configuration)'=='Release_linux' OR '$(Configuration)'=='Release_osx' OR '$(Configuration)'=='Release_win'">
     <Optimize>true</Optimize>
     <DebugType>none</DebugType>
   </PropertyGroup>
