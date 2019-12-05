@@ -2,9 +2,6 @@
 using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
-using TheDialgaTeam.Core.DependencyInjection.Factory;
-using TheDialgaTeam.Core.DependencyInjection.Service;
-using TheDialgaTeam.Core.DependencyInjection.TaskAwaiter;
 
 namespace TheDialgaTeam.Core.DependencyInjection
 {
@@ -18,12 +15,17 @@ namespace TheDialgaTeam.Core.DependencyInjection
         {
             ServiceCollection = new ServiceCollection();
             ServiceCollection.AddSingleton(new CancellationTokenSource());
-            ServiceCollection.AddInterfacesAndSelfAsSingleton<TaskAwaiterCollection>();
+            ServiceCollection.AddInterfacesAndSelfAsSingleton<TaskCollection>();
         }
 
-        public void InstallFactory(IFactoryInstaller installer)
+        public void InstallService(IServiceInstaller serviceInstaller)
         {
-            installer.Install(ServiceCollection);
+            serviceInstaller.InstallService(ServiceCollection);
+        }
+
+        public void InstallService(Action<IServiceCollection> installServiceAction)
+        {
+            installServiceAction(ServiceCollection);
         }
 
         public void BuildAndExecute(Action<IServiceProvider, Exception> executeFailedAction)
@@ -34,12 +36,13 @@ namespace TheDialgaTeam.Core.DependencyInjection
 
                 var serviceProvider = ServiceProvider;
                 var serviceExecutors = serviceProvider.GetServices<IServiceExecutor>();
+                var taskAwaiter = serviceProvider.GetService<ITaskAwaiter>();
 
                 foreach (var serviceExecutor in serviceExecutors)
-                    serviceExecutor.Execute();
+                    serviceExecutor.ExecuteService(taskAwaiter);
 
-                var taskAwaiter = serviceProvider.GetRequiredService<TaskAwaiterCollection>();
-                taskAwaiter.WaitAll();
+                var taskCollection = serviceProvider.GetRequiredService<TaskCollection>();
+                taskCollection.WaitAll();
 
                 var disposableServices = serviceProvider.GetServices<IDisposable>().Reverse();
 

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
+namespace TheDialgaTeam.Core.DependencyInjection
 {
-    internal class TaskAwaiterCollection : ITaskAwaiter, IDisposable
+    internal class TaskCollection : ITaskAwaiter, IDisposable
     {
         private class EnqueueTaskState
         {
@@ -69,7 +69,7 @@ namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
 
         private List<Task> TaskToAwait { get; } = new List<Task>();
 
-        public TaskAwaiterCollection(CancellationTokenSource cancellationTokenSource)
+        public TaskCollection(CancellationTokenSource cancellationTokenSource)
         {
             CancellationTokenSource = cancellationTokenSource;
         }

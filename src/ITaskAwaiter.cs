@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TheDialgaTeam.Core.DependencyInjection.TaskAwaiter
+namespace TheDialgaTeam.Core.DependencyInjection
 {
     public interface ITaskAwaiter
     {
