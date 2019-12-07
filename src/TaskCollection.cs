@@ -6,7 +6,7 @@ using TheDialgaTeam.Core.Task;
 
 namespace TheDialgaTeam.Core.DependencyInjection
 {
-    internal class TaskCollection : ITaskAwaiter, IDisposable
+    internal sealed class TaskCollection : ITaskAwaiter, IDisposable
     {
         private CancellationTokenSource CancellationTokenSource { get; }
 
