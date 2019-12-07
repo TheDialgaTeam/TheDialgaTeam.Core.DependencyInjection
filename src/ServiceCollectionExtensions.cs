@@ -10,8 +10,15 @@ namespace TheDialgaTeam.Core.DependencyInjection
             if (serviceCollection == null)
                 throw new ArgumentNullException(nameof(serviceCollection));
 
-            foreach (var type in typeof(TService).GetInterfaces())
-                serviceCollection.AddSingleton(type, typeof(TService));
+            var types = typeof(TService).GetInterfaces();
+
+            for (var i = 0; i < types.Length; i++)
+            {
+                if (i == 0)
+                    serviceCollection.AddSingleton(types[i], typeof(TService));
+                else
+                    serviceCollection.AddSingleton(types[i], a => a.GetRequiredService(types[0]));
+            }
 
             return serviceCollection;
         }

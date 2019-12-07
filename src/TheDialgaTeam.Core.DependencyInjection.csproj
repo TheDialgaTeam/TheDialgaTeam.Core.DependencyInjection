@@ -33,4 +33,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\TheDialgaTeam.Core.Task\src\TheDialgaTeam.Core.Task.csproj" />
+  </ItemGroup>
+
 </Project>

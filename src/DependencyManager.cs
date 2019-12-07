@@ -11,11 +11,15 @@ namespace TheDialgaTeam.Core.DependencyInjection
 
         private ServiceProvider ServiceProvider { get; set; }
 
+        private bool IsDisposed { get; set; }
+
         public DependencyManager()
         {
             ServiceCollection = new ServiceCollection();
             ServiceCollection.AddSingleton(new CancellationTokenSource());
             ServiceCollection.AddInterfacesAndSelfAsSingleton<TaskCollection>();
+
+            IsDisposed = false;
         }
 
         public void InstallService(IServiceInstaller serviceInstaller)
@@ -38,11 +42,26 @@ namespace TheDialgaTeam.Core.DependencyInjection
                 var serviceExecutors = serviceProvider.GetServices<IServiceExecutor>();
                 var taskAwaiter = serviceProvider.GetService<ITaskAwaiter>();
 
+                AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
+                {
+                    if (IsDisposed)
+                        return;
+
+                    serviceProvider.GetRequiredService<CancellationTokenSource>().Cancel();
+                    serviceProvider.GetRequiredService<TaskCollection>().WaitAll();
+
+                    var forcedDisposableServices = serviceProvider.GetServices<IDisposable>().Reverse();
+
+                    foreach (var disposableService in forcedDisposableServices)
+                        disposableService.Dispose();
+
+                    Dispose();
+                };
+
                 foreach (var serviceExecutor in serviceExecutors)
                     serviceExecutor.ExecuteService(taskAwaiter);
 
-                var taskCollection = serviceProvider.GetRequiredService<TaskCollection>();
-                taskCollection.WaitAll();
+                serviceProvider.GetRequiredService<TaskCollection>().WaitAll();
 
                 var disposableServices = serviceProvider.GetServices<IDisposable>().Reverse();
 
@@ -62,6 +81,7 @@ namespace TheDialgaTeam.Core.DependencyInjection
         public void Dispose()
         {
             ServiceProvider?.Dispose();
+            IsDisposed = true;
         }
     }
 }
