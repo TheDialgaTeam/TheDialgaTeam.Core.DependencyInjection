@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using TheDialgaTeam.Core.Task;
+using TheDialgaTeam.Core.Tasks;
 
 namespace TheDialgaTeam.Core.DependencyInjection
 {
@@ -10,50 +10,50 @@ namespace TheDialgaTeam.Core.DependencyInjection
     {
         private CancellationTokenSource CancellationTokenSource { get; }
 
-        private List<System.Threading.Tasks.Task> TaskToAwait { get; } = new List<System.Threading.Tasks.Task>();
+        private List<Task> TaskToAwait { get; } = new List<Task>();
 
         public TaskCollection(CancellationTokenSource cancellationTokenSource)
         {
             CancellationTokenSource = cancellationTokenSource;
         }
 
-        public System.Threading.Tasks.Task EnqueueTask(System.Threading.Tasks.Task taskToAwait)
+        public Task EnqueueTask(Task taskToAwait)
         {
             TaskToAwait.Add(taskToAwait);
             return taskToAwait;
         }
 
-        public System.Threading.Tasks.Task EnqueueTask(Action<CancellationToken> action)
+        public Task EnqueueTask(Action<CancellationToken> action)
         {
-            var task = System.Threading.Tasks.Task.Factory.StartNew(innerState => { innerState.action(innerState.CancellationTokenSource.Token); }, (action, CancellationTokenSource));
+            var task = Task.Factory.StartNew<(Action<CancellationToken> action, CancellationTokenSource cancellationTokenSource)>(innerState => { innerState.action(innerState.cancellationTokenSource.Token); }, (action, CancellationTokenSource));
             TaskToAwait.Add(task);
             return task;
         }
 
-        public System.Threading.Tasks.Task EnqueueTask(Func<CancellationToken, System.Threading.Tasks.Task> function)
+        public Task EnqueueTask(Func<CancellationToken, Task> function)
         {
-            var task = System.Threading.Tasks.Task.Factory.StartNew(innerState => innerState.function(innerState.CancellationTokenSource.Token), (function, CancellationTokenSource)).Unwrap();
+            var task = Task.Factory.StartNew<Task, (Func<CancellationToken, Task> function, CancellationTokenSource cancellationTokenSource)>(innerState => innerState.function(innerState.cancellationTokenSource.Token), (function, CancellationTokenSource)).Unwrap();
             TaskToAwait.Add(task);
             return task;
         }
 
-        public System.Threading.Tasks.Task EnqueueTask<TState>(TState state, Action<CancellationToken, TState> action)
+        public Task EnqueueTask<TState>(TState state, Action<CancellationToken, TState> action)
         {
-            var task = System.Threading.Tasks.Task.Factory.StartNew(innerState => { innerState.action(innerState.CancellationTokenSource.Token, innerState.state); }, (state, action, CancellationTokenSource));
+            var task = Task.Factory.StartNew<(TState state, Action<CancellationToken, TState> action, CancellationTokenSource cancellationTokenSource)>(innerState => { innerState.action(innerState.cancellationTokenSource.Token, innerState.state); }, (state, action, CancellationTokenSource));
             TaskToAwait.Add(task);
             return task;
         }
 
-        public System.Threading.Tasks.Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, System.Threading.Tasks.Task> function)
+        public Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Task> function)
         {
-            var task = System.Threading.Tasks.Task.Factory.StartNew(innerState => innerState.function(innerState.CancellationTokenSource.Token, innerState.state), (state, function, CancellationTokenSource)).Unwrap();
+            var task = Task.Factory.StartNew<Task, (TState state, Func<CancellationToken, TState, Task> function, CancellationTokenSource cancellationTokenSource)>(innerState => innerState.function(innerState.cancellationTokenSource.Token, innerState.state), (state, function, CancellationTokenSource)).Unwrap();
             TaskToAwait.Add(task);
             return task;
         }
 
         public void WaitAll()
         {
-            System.Threading.Tasks.Task.WaitAll(TaskToAwait.ToArray());
+            Task.WaitAll(TaskToAwait.ToArray());
         }
 
         public void Dispose()

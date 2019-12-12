@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\TheDialgaTeam.Core.Task\src\TheDialgaTeam.Core.Task.csproj" />
+    <ProjectReference Include="..\..\TheDialgaTeam.Core.Task\src\TheDialgaTeam.Core.Tasks.csproj" />
   </ItemGroup>
 
 </Project>
