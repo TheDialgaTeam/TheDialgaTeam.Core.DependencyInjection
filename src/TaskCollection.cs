@@ -27,28 +27,28 @@ namespace TheDialgaTeam.Core.DependencyInjection
 
         public Task EnqueueTask(Action<CancellationToken> action)
         {
-            var task = Task.Factory.StartNew<(Action<CancellationToken> action, CancellationTokenSource cancellationTokenSource)>(innerState => { innerState.action(innerState.cancellationTokenSource.Token); }, (action, _cancellationTokenSource));
+            var task = TaskState.Run<(Action<CancellationToken> action, CancellationTokenSource cancellationTokenSource)>((action, _cancellationTokenSource), innerState => { innerState.action(innerState.cancellationTokenSource.Token); }, _cancellationTokenSource.Token);
             _taskToAwait.Add(task);
             return task;
         }
 
         public Task EnqueueTask(Func<CancellationToken, Task> function)
         {
-            var task = Task.Factory.StartNew<Task, (Func<CancellationToken, Task> function, CancellationTokenSource cancellationTokenSource)>(innerState => innerState.function(innerState.cancellationTokenSource.Token), (function, _cancellationTokenSource)).Unwrap();
+            var task = TaskState.Run<(Func<CancellationToken, Task> function, CancellationTokenSource cancellationTokenSource), Task>((function, _cancellationTokenSource), innerState => innerState.function(innerState.cancellationTokenSource.Token), _cancellationTokenSource.Token).Unwrap();
             _taskToAwait.Add(task);
             return task;
         }
 
         public Task EnqueueTask<TState>(TState state, Action<CancellationToken, TState> action)
         {
-            var task = Task.Factory.StartNew<(TState state, Action<CancellationToken, TState> action, CancellationTokenSource cancellationTokenSource)>(innerState => { innerState.action(innerState.cancellationTokenSource.Token, innerState.state); }, (state, action, _cancellationTokenSource));
+            var task = TaskState.Run<(TState state, Action<CancellationToken, TState> action, CancellationTokenSource cancellationTokenSource)>((state, action, _cancellationTokenSource), innerState => { innerState.action(innerState.cancellationTokenSource.Token, innerState.state); }, _cancellationTokenSource.Token);
             _taskToAwait.Add(task);
             return task;
         }
 
         public Task EnqueueTask<TState>(TState state, Func<CancellationToken, TState, Task> function)
         {
-            var task = Task.Factory.StartNew<Task, (TState state, Func<CancellationToken, TState, Task> function, CancellationTokenSource cancellationTokenSource)>(innerState => innerState.function(innerState.cancellationTokenSource.Token, innerState.state), (state, function, _cancellationTokenSource)).Unwrap();
+            var task = TaskState.Run<(TState state, Func<CancellationToken, TState, Task> function, CancellationTokenSource cancellationTokenSource), Task>((state, function, _cancellationTokenSource), innerState => innerState.function(innerState.cancellationTokenSource.Token, innerState.state), _cancellationTokenSource.Token).Unwrap();
             _taskToAwait.Add(task);
             return task;
         }
