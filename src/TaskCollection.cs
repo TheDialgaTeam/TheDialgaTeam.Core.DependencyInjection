@@ -55,7 +55,13 @@ namespace TheDialgaTeam.Core.DependencyInjection
 
         public void WaitAll()
         {
-            Task.WaitAll(_taskToAwait.ToArray());
+            var taskToAwait = _taskToAwait.FindAll(a => !a.IsCompleted);
+            
+            while (taskToAwait.Count > 0)
+            {
+                Task.WaitAll(taskToAwait.ToArray());
+                taskToAwait = _taskToAwait.FindAll(a => !a.IsCompleted);
+            }
         }
 
         public void Dispose()
