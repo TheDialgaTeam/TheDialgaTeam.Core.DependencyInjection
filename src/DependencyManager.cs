@@ -7,81 +7,89 @@ namespace TheDialgaTeam.Core.DependencyInjection
 {
     public sealed class DependencyManager : IDisposable
     {
-        private ServiceCollection ServiceCollection { get; }
+        private readonly IServiceCollection _serviceCollection;
 
-        private ServiceProvider ServiceProvider { get; set; }
+        private ServiceProvider _serviceProvider;
 
-        private bool IsDisposed { get; set; }
+        private Action<IServiceProvider, Exception> _executeFailedAction;
 
-        public DependencyManager()
+        private bool _isExecuted;
+
+        private bool _isDisposed;
+
+        private IServiceProvider ServiceProvider => _serviceProvider;
+
+        public DependencyManager(IServiceCollection serviceCollection = null)
         {
-            ServiceCollection = new ServiceCollection();
-            ServiceCollection.AddSingleton(new CancellationTokenSource());
-            ServiceCollection.AddInterfacesAndSelfAsSingleton<TaskCollection>();
-
-            IsDisposed = false;
+            _serviceCollection = serviceCollection ?? new ServiceCollection();
+            _serviceCollection.AddInterfacesAndSelfAsSingleton<CancellationTokenSource>();
+            _serviceCollection.AddInterfacesAndSelfAsSingleton<TaskCollection>();
         }
 
         public void InstallService(IServiceInstaller serviceInstaller)
         {
-            serviceInstaller.InstallService(ServiceCollection);
+            serviceInstaller.InstallService(_serviceCollection);
         }
 
         public void InstallService(Action<IServiceCollection> installServiceAction)
         {
-            installServiceAction(ServiceCollection);
+            installServiceAction(_serviceCollection);
         }
 
         public void BuildAndExecute(Action<IServiceProvider, Exception> executeFailedAction)
         {
             try
             {
-                ServiceProvider = ServiceCollection.BuildServiceProvider();
+                if (_isExecuted)
+                    return;
 
-                var serviceProvider = ServiceProvider;
-                var serviceExecutors = serviceProvider.GetServices<IServiceExecutor>();
-                var taskAwaiter = serviceProvider.GetService<ITaskAwaiter>();
+                _isExecuted = true;
 
-                AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
-                {
-                    if (IsDisposed)
-                        return;
+                _serviceProvider = _serviceCollection.BuildServiceProvider();
+                _executeFailedAction = executeFailedAction;
 
-                    serviceProvider.GetRequiredService<CancellationTokenSource>().Cancel();
-                    serviceProvider.GetRequiredService<TaskCollection>().WaitAll();
+                AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-                    var forcedDisposableServices = serviceProvider.GetServices<IDisposable>().Reverse();
-
-                    foreach (var disposableService in forcedDisposableServices)
-                        disposableService.Dispose();
-
-                    Dispose();
-                };
+                var serviceExecutors = _serviceProvider.GetServices<IServiceExecutor>();
+                var taskAwaiter = _serviceProvider.GetRequiredService<ITaskAwaiter>();
 
                 foreach (var serviceExecutor in serviceExecutors)
                     serviceExecutor.ExecuteService(taskAwaiter);
 
-                serviceProvider.GetRequiredService<TaskCollection>().WaitAll();
+                _serviceProvider.GetRequiredService<TaskCollection>().WaitAll();
 
-                var disposableServices = serviceProvider.GetServices<IDisposable>().Reverse();
+                var disposableServices = _serviceProvider.GetServices<IDisposable>().Reverse();
 
                 foreach (var disposableService in disposableServices)
                     disposableService.Dispose();
 
                 Dispose();
-
                 Environment.Exit(0);
             }
             catch (Exception ex)
             {
-                executeFailedAction(ServiceProvider, ex);
+                executeFailedAction(_serviceProvider, ex);
+                Dispose();
             }
+        }
+
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            _executeFailedAction(ServiceProvider, e.ExceptionObject as Exception);
         }
 
         public void Dispose()
         {
-            ServiceProvider?.Dispose();
-            IsDisposed = true;
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            _serviceProvider?.Dispose();
+
+            if (!_isExecuted)
+                return;
+
+            AppDomain.CurrentDomain.UnhandledException -= CurrentDomainOnUnhandledException;
         }
     }
 }
