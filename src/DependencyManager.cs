@@ -48,7 +48,9 @@ namespace TheDialgaTeam.Core.DependencyInjection
                 _serviceProvider = _serviceCollection.BuildServiceProvider();
                 _executeFailedAction = executeFailedAction;
 
+#if !DEBUG
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+#endif
 
                 var serviceExecutors = _serviceProvider.GetServices<IServiceExecutor>();
                 var taskAwaiter = _serviceProvider.GetRequiredService<ITaskAwaiter>();
@@ -86,10 +88,12 @@ namespace TheDialgaTeam.Core.DependencyInjection
             _isDisposed = true;
             _serviceProvider?.Dispose();
 
+#if !DEBUG
             if (!_isExecuted)
                 return;
 
             AppDomain.CurrentDomain.UnhandledException -= CurrentDomainOnUnhandledException;
+#endif
         }
     }
 }
