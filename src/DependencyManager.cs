@@ -31,18 +31,16 @@ namespace TheDialgaTeam.Core.DependencyInjection
             installServiceAction(_serviceCollection);
         }
 
-        public void BuildAndExecute(Action<IServiceProvider, Exception> executeFailedAction)
+        public void BuildAndExecute(Action<IServiceProvider> preExecuteAction = null, Action<IServiceProvider> postExecuteAction = null, Action<IServiceProvider, Exception> executeFailedAction = null)
         {
             try
             {
-                if (_isExecuted)
-                {
-                    return;
-                }
-
+                if (_isExecuted) return;
                 _isExecuted = true;
 
                 _serviceProvider = _serviceCollection.BuildServiceProvider();
+
+                preExecuteAction?.Invoke(_serviceProvider);
 
                 var serviceExecutors = _serviceProvider.GetServices<IServiceExecutor>();
                 var taskAwaiter = _serviceProvider.GetRequiredService<ITaskAwaiter>();
@@ -53,10 +51,12 @@ namespace TheDialgaTeam.Core.DependencyInjection
                 }
 
                 (taskAwaiter as TaskCollection)?.WaitAll();
+
+                postExecuteAction?.Invoke(_serviceProvider);
             }
             catch (Exception ex)
             {
-                executeFailedAction(_serviceProvider, ex);
+                executeFailedAction?.Invoke(_serviceProvider, ex);
             }
             finally
             {
