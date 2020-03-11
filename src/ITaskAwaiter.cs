@@ -6,8 +6,6 @@ namespace TheDialgaTeam.Core.DependencyInjection
 {
     public interface ITaskAwaiter
     {
-        Task EnqueueTask(Task taskToAwait);
-
         Task EnqueueTask(Action<CancellationToken> taskToAwait);
 
         Task EnqueueTask(Func<CancellationToken, Task> taskToAwait);
